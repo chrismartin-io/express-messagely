@@ -1,8 +1,7 @@
 const express = require("express");
-const Message = require("../models/message");
 const User = require("../models/user");
-const ExpressError = require('../expressError');
-
+const jwt = require('jsonwebtoken');
+const SECRET_KEY = "oh-so-secret";
 
 const router = new express.Router();
 
@@ -13,10 +12,16 @@ const router = new express.Router();
  *
  **/
 
-router.get('/', function (req, res, next) {
+router.get('/', async function (req, res, next) {
   try {
-    return {
-      users: User.all()
+    const tokenFromBody = req.body._token;
+    let verifyUser = jwt.verify(tokenFromBody, SECRET_KEY);
+
+    if (verifyUser) {
+      let users = await User.all();
+      return res.json({
+        users: users
+      });
     }
   } catch (err) {
     next(err);
@@ -32,12 +37,22 @@ router.get('/', function (req, res, next) {
 
 router.get('/:username', async function (req, res, next) {
   try {
-    let result = await User.get(req.params.username);
-    return res.json(result);
+    const tokenFromBody = req.body._token;
+    let verifyUser = jwt.verify(tokenFromBody, SECRET_KEY);
+
+    if (req.params.username === verifyUser.username) {
+      let user = await User.get(req.params.username);
+      return res.json({
+        user: user
+      });
+    } else {
+      next('Not authorized', 400);
+    }
   } catch (err) {
     next(err);
   }
-})
+});
+
 
 /** GET /:username/to - get messages to user
  *
@@ -52,10 +67,17 @@ router.get('/:username', async function (req, res, next) {
 
 router.get('/:username/to', async function (req, res, next) {
   try {
-    let result = await User.messagesTo(req.params.username);
-    return res.json({
-      messages: result
-    })
+    const tokenFromBody = req.body._token;
+    let verifyUser = jwt.verify(tokenFromBody, SECRET_KEY);
+
+    if (req.params.username === verifyUser.username) {
+      let result = await User.messagesTo(req.params.username);
+      return res.json({
+        messages: result
+      })
+    } else {
+      next('Not authorized', 400);
+    }
   } catch (err) {
     next(err);
   }
@@ -74,10 +96,17 @@ router.get('/:username/to', async function (req, res, next) {
 
 router.get('/:username/from', async function (req, res, next) {
   try {
-    let result = await User.messagesFrom(req.params.username);
-    return res.json({
-      messages: result
-    })
+    const tokenFromBody = req.body._token;
+    let verifyUser = jwt.verify(tokenFromBody, SECRET_KEY);
+
+    if (req.params.username === verifyUser.username) {
+      let result = await User.messagesFrom(req.params.username);
+      return res.json({
+        messages: result
+      })
+    } else {
+      next('Not authorized', 400);
+    }
   } catch (err) {
     next(err);
   }

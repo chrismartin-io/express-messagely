@@ -41,9 +41,8 @@ class User {
     password,
     first_name,
     last_name,
-    phone
-  ) {
-
+    phone) {
+      
     const hashedPw = await bcrypt.hash(
       password, BCRYPT_WORK_FACTOR);
 

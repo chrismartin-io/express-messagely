@@ -1,5 +1,4 @@
 const express = require("express");
-const Message = require("../models/message");
 const User = require("../models/user");
 const ExpressError = require('../expressError');
 const jwt = require("jsonwebtoken");
@@ -54,9 +53,8 @@ router.post('/register', async function (req, res, next) {
       phone
     } = req.body;
     
-    let registerUser = await User.register(username, password, first_name, last_name, phone);
-    let updateTime = await User.updateLoginTimestamp(username);
-
+    await User.register(username, password, first_name, last_name, phone);
+    await User.updateLoginTimestamp(username);
 
     // JWT setup
     let payload = {
@@ -65,7 +63,7 @@ router.post('/register', async function (req, res, next) {
 
     let token = await jwt.sign(payload, SECRET_KEY, JWT_OPTIONS);
 
-    return res.json(token);
+    return res.json({token});
   } catch (err) {
     return next(err);
   }

@@ -24,10 +24,22 @@ const router = new express.Router();
 
 router.get('/:id', async function (req, res, next) {
   try {
-    let result = await Message.get(req.params.id);
-    return res.json({
-      message: result
-    });
+
+    const tokenFromBody = req.body._token;
+    let verifyUser = jwt.verify(tokenFromBody, SECRET_KEY);
+
+    let messageDetails = await Message.get(req.params.id);
+
+    if (verifyUser.username === messageDetails.from_user.username ||
+      verifyUser.username === messageDetails.to_user.username) {
+      let result = await Message.get(req.params.id);
+      return res.json({
+        message: result
+      });
+    }
+    else {
+      next('Not authorized', 401);
+    }
   } catch (err) {
     next(err);
   }
@@ -45,7 +57,7 @@ router.post('/', async function (req, res, next) {
   try {
     const tokenFromBody = req.body._token;
     let verifyUser = jwt.verify(tokenFromBody, SECRET_KEY);
-    
+
     if (verifyUser) {
       let to_username = req.body.to_username;
       let from_username = req.body.from_username;
@@ -53,7 +65,7 @@ router.post('/', async function (req, res, next) {
       let result = await Message.create(from_username, to_username, body);
       return res.json(result);
     }
-    
+
   } catch (err) {
     next(err);
   }
@@ -77,7 +89,7 @@ router.post('/:id/read', async function (req, res, next) {
     if (verifyUser.username === messageInfo.to_user.username) {
       let result = await Message.markRead(req.params.id);
       return res.json(result);
-    } 
+    }
 
   } catch (err) {
     next(err);
