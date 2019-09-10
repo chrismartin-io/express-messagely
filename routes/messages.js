@@ -2,6 +2,8 @@ const express = require("express");
 const Message = require("../models/message");
 const User = require("../models/user");
 const ExpressError = require('../expressError');
+const jwt = require("jsonwebtoken");
+const SECRET_KEY = "oh-so-secret";
 
 
 const router = new express.Router();
@@ -20,11 +22,12 @@ const router = new express.Router();
  *
  **/
 
-router.get('/:id', function (req, res, next) {
+router.get('/:id', async function (req, res, next) {
   try {
-    return {
-      message: Message.get(id)
-    }
+    let result = await Message.get(req.params.id);
+    return res.json({
+      message: result
+    });
   } catch (err) {
     next(err);
   }
@@ -38,16 +41,19 @@ router.get('/:id', function (req, res, next) {
  *
  **/
 
-router.post('/', function (req, res, next) {
+router.post('/', async function (req, res, next) {
   try {
-
     const tokenFromBody = req.body._token;
-    let user = jwt.verify(tokenFromBody, SECRET_KEY);
-    let to_username = req.body.to_usernamne;
-    let body = req.body.body;
-
-    Message.create(user.username, to_username, body);
-
+    let verifyUser = jwt.verify(tokenFromBody, SECRET_KEY);
+    
+    if (verifyUser) {
+      let to_username = req.body.to_username;
+      let from_username = req.body.from_username;
+      let body = req.body.body;
+      let result = await Message.create(from_username, to_username, body);
+      return res.json(result);
+    }
+    
   } catch (err) {
     next(err);
   }
@@ -62,7 +68,21 @@ router.post('/', function (req, res, next) {
  *
  **/
 
+router.post('/:id/read', async function (req, res, next) {
+  try {
+    const tokenFromBody = req.body._token;
+    let verifyUser = jwt.verify(tokenFromBody, SECRET_KEY);
+    let messageInfo = await Message.get(req.params.id)
 
+    if (verifyUser.username === messageInfo.to_user.username) {
+      let result = await Message.markRead(req.params.id);
+      return res.json(result);
+    } 
+
+  } catch (err) {
+    next(err);
+  }
+})
 
 
 

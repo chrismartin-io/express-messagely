@@ -32,10 +32,7 @@ router.get('/', function (req, res, next) {
 
 router.get('/:username', async function (req, res, next) {
   try {
-    console.log('hi');
-    console.log(req.params.username);
     let result = await User.get(req.params.username);
-    console.log(result);
     return res.json(result);
   } catch (err) {
     next(err);
@@ -53,11 +50,12 @@ router.get('/:username', async function (req, res, next) {
  **/
 
 
-router.get('/:username/to', function (req, res, next) {
+router.get('/:username/to', async function (req, res, next) {
   try {
-    return {
-      messages: User.messagesTo(username)
-    }
+    let result = await User.messagesTo(req.params.username);
+    return res.json({
+      messages: result
+    })
   } catch (err) {
     next(err);
   }
@@ -74,11 +72,12 @@ router.get('/:username/to', function (req, res, next) {
  *
  **/
 
-router.get('/:username/from', function (req, res, next) {
+router.get('/:username/from', async function (req, res, next) {
   try {
-    return {
-      messages: User.messagesFrom(username)
-    }
+    let result = await User.messagesFrom(req.params.username);
+    return res.json({
+      messages: result
+    })
   } catch (err) {
     next(err);
   }

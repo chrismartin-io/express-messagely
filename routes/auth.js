@@ -44,7 +44,7 @@ router.post('/login', function (req, res, next) {
  */
 
 
-router.post('/register', function (req, res, next) {
+router.post('/register', async function (req, res, next) {
   try {
     const {
       username,
@@ -53,17 +53,19 @@ router.post('/register', function (req, res, next) {
       last_name,
       phone
     } = req.body;
-    User.register(username, password, first_name, last_name, phone);
-    User.updateLoginTimestamp(username);
+    
+    let registerUser = await User.register(username, password, first_name, last_name, phone);
+    let updateTime = await User.updateLoginTimestamp(username);
 
 
     // JWT setup
     let payload = {
       username: username
     }
-    let token = jwt.sign(payload, SECRET_KEY, JWT_OPTIONS);
 
-    return token;
+    let token = await jwt.sign(payload, SECRET_KEY, JWT_OPTIONS);
+
+    return res.json(token);
   } catch (err) {
     return next(err);
   }
