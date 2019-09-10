@@ -3,14 +3,26 @@
 const db = require("../db");
 const ExpressError = require("../expressError");
 const bcrypt = require('bcrypt');
-const { SECRET_KEY, BCRYPT_WORK_FACTOR, DB_URI } = require("../config");
+const {
+  SECRET_KEY,
+  BCRYPT_WORK_FACTOR,
+  DB_URI
+} = require("../config");
 
 
 /** User of the site. */
 
 class User {
 
-  constructor({ username, password, first_name, last_name, phone, join_at, last_login_at }) {
+  constructor({
+    username,
+    password,
+    first_name,
+    last_name,
+    phone,
+    join_at,
+    last_login_at
+  }) {
     this.username = username;
     this.password = password;
     this.first_name = first_name;
@@ -24,7 +36,13 @@ class User {
    *    {username, password, first_name, last_name, phone}
    */
 
-  static async register({ username, password, first_name, last_name, phone }) {
+  static async register({
+    username,
+    password,
+    first_name,
+    last_name,
+    phone
+  }) {
 
     const hashedPw = await bcrypt.hash(
       password, BCRYPT_WORK_FACTOR);
@@ -56,8 +74,7 @@ class User {
     if (user) {
       if (await bcrypt.compare(password, user.password) === true) {
         return true;
-      }
-      else return false;
+      } else return false;
     }
 
     return false;
@@ -115,24 +132,30 @@ class User {
    */
 
   static async messagesFrom(username) {
-    const messageResult = await db.query(
-      `SELECT id, body, read_at, sent_at
+    const result = await db.query(
+      `SELECT id, to_username, body, sent_at, read_at, from_username, users.username, users.first_name, users.last_name, users.phone
       FROM messages 
-      WHERE from_username=$1`,
+      JOIN users 
+      ON messages.to_username = users.username
+      WHERE messages.from_username = $1`,
       [username]);
 
-    const toUser = messageResult.rows[0].to_username
 
-    const userToResult = await db.query(
-      `SELECT username, first_name, last_name, phone
-      FROM users
-      WHERE username=$1`, 
-      [toUser]
-    )
+    let resulting = result.rows.map(u => ({
+      id: u.id,
+      body: u.body,
+      sent_at: u.sent_at,
+      read_at: u.read_at,
+      to_user: {
+        username: u.username,
+        first_name: u.first_name,
+        phone: u.phone,
+        last_name: u.last_name,
+      }
+    }));
 
-    // messageResult.to_user = userToResult.rows[0]
-
-    return messageResult.rows;
+    console.log(resulting);
+    return resulting
   }
 
   /** Return messages to this user.
@@ -149,10 +172,25 @@ class User {
       FROM messages 
       JOIN users 
       ON messages.from_username = users.username
-      WHERE users.username = $1`,
+      WHERE messages.to_username = $1`,
       [username]);
-    console.log(result.rows)
-    return result.rows;
+
+
+    let resulting = result.rows.map(u => ({
+      id: u.id,
+      body: u.body,
+      sent_at: u.sent_at,
+      read_at: u.read_at,
+      from_user: {
+        username: u.username,
+        first_name: u.first_name,
+        phone: u.phone,
+        last_name: u.last_name,
+      }
+    }));
+
+    return resulting
+
   }
 }
 
